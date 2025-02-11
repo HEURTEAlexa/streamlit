@@ -1255,40 +1255,13 @@ elif page == pages[4]:
         nom_compteur= pd.read_csv('df_compteur_unique.csv') #Id_Compteur Address
         return df_pre, lien_photos, nom_compteur
     
-    #________Charger les modèles enregistrés avec JOBLIB
-    @st.cache_data 
-    def load_model():
-        return joblib.load('lgb_compteursParis.pkl')
-
-    LGB1_model  = load_model()
 
     #________Séparer le jeu de données en features (X) et target (y) 
     df_pre, lien_photos, nom_compteur = load_data()
 
-    # Définir une liste vide pour stocker les numéros de semaine sélectionnés
-    selected_weeks = []  
-    for week in range(4, 53, 4): # Boucler sur les multiples en 4 de 4 à 52 inclus
-        selected_weeks.append(week)
-
-    y = df_pre['Comptage_horaire']
-    X = df_pre.drop('Comptage_horaire', axis=1)
-
-    # Créer un masque booléen pour les lignes à conserver dans le train et le test
-    test_mask = df_pre['Num_semaine'].isin(selected_weeks)
-    X_test = X[test_mask]
-    y_test = y[test_mask]  
-
-    print(f"Taille de l'ensemble de test : {len(X_test)} ({round((len(X_test)/len(df_pre)) * 100)} %)")  
+   
     
 
-
-    # Fonction pour calculer le RMSLE
-    def rmsle(y_true, y_pred):
-        return np.sqrt(np.mean((np.log1p(np.clip(y_pred, 0, None)) - np.log1p(y_true)) ** 2))
-    rmsle_scorer = make_scorer(rmsle)
-
-    #-----------------------------------------Faire les prédictions avec chaque modèle
-    y_pred_Lgb1 = LGB1_model.predict(X_test)
 
     #-----------------------------------------Calculer les métriques pour chaque modèle
     #_________ LGBX
