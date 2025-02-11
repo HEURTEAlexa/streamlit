@@ -1,0 +1,14 @@
+streamlit==1.36.0
+matplotlib
+plotly
+joblib
+scikit-learn==1.2.2
+seaborn==0.12.2
+statsmodels
+lightgbm
+xgboost
+geopandas==0.13.2
+folium==0.14.0
+shapely==2.0.4
+streamlit_folium
+numpy==1.24.3
