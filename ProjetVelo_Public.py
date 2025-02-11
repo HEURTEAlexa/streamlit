@@ -12,14 +12,22 @@ import time
 import streamlit.components.v1 as components
 import pandas as pd
 import matplotlib.pyplot as plt
-import streamlit as st
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import plotly.express as px
 import numpy as np
 import io
+import os
 import base64
 from PIL import Image
+import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
+import matplotlib.pyplot as plt
+import seaborn as sns
+import requests
+from io import StringIO
+import joblib
 
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
@@ -47,14 +55,7 @@ from sklearn.linear_model import ElasticNetCV, ElasticNet
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import ExtraTreesRegressor, RandomForestRegressor, IsolationForest
 
-import numpy as np
-import pandas as pd
-import plotly.graph_objects as go
-import matplotlib.pyplot as plt
-import seaborn as sns
 
-import time
-import joblib
 
 # Désactivation des messages d'avertissements
 import warnings
@@ -93,17 +94,22 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+#file folder path
+filefolderpath = ''
+
 # Menu latéral
 st.sidebar.title("Sommaire")
-pages = ["Contexte et problématique projet", "Jeu de données","Exploration Statistique", "Visualisation des données", "Synthèse des tests de modélisation", "Prédictions", "Conclusion"]
-page = st.sidebar.radio("Aller vers", pages)
+pages = ["Contexte et problématique projet", "Exploration des données", "Visualisation des données", "Synthèse des tests de modélisation", "Analyse prédictive par compteur", "Sources"]
+
+#Identifier la page par défaut sur Analyse prédictive
+page = st.sidebar.radio("Aller vers", pages,index=4)
 
 def get_base64_image(image_path):
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode('utf-8')
 
 # Chemin de l'image
-image_path = 'C:\\Users\\La Foune\\Documents\\Streamlit\\LinkedIn-Symbole.png'
+image_path = 'LinkedIn-Symbole.png'
 linkedin_icon_base64 = get_base64_image(image_path)
 
 # Affichage dans la sidebar du cadre perso
@@ -147,7 +153,7 @@ st.sidebar.markdown(
 
 
 # Chemin de l'image
-image_path = "C:\\Users\\La Foune\\Documents\\Streamlit\ImageVelo.png"
+image_path = "ImageVelo.png"
 img = Image.open(image_path)
 width = 1000   
 height = 250  
@@ -299,7 +305,7 @@ elif page == pages[1]:
         def load_data(filepath):
             return pd.read_csv(filepath)
 
-        csv_file_path = 'C:\\Users\\La Foune\\Documents\\Streamlit\\df_pre_modelisation.csv'
+        csv_file_path = os.path.join(filefolderpath,'df_pre_modelisation.csv')
         df = load_data(csv_file_path)
 
         # Utilisation de StringIO pour capturer les informations du DataFrame en tant que texte
@@ -419,7 +425,7 @@ elif page == pages[1]:
             </div>
             <div style="height: 30px;"></div>             
                               
-           **&#10132;  Ajout complémenataires lors de l'étude de la cartographie, données utilisées lors de la modélisation : arrondissement, typologie du réseau cyclable.**
+           **&#10132;  Etude cartographique : arrondissement, typologie du réseau cyclable.**
             
             <div style="line-height: 1.4;">
                 <div style="margin-bottom: 20px;">
@@ -450,159 +456,36 @@ elif page == pages[1]:
             """, unsafe_allow_html=True)
 
     #________________________________________
-    st.subheader("Exploration des données")   
-    with st.expander("Voir les différentes actions réalisées sur le dataframe"):
-        col1, col2 = st.columns([1, 1])
-        with col2:
-            st.markdown("<span style='font-size: 20px; font-weight: bold;'>Info dataset final</span>", unsafe_allow_html=True)
-            st.text(info_str)
-
-        with col1:
-            st.markdown("<span style='font-size: 20px; font-weight: bold;'>Actions</span>", unsafe_allow_html=True)
+    st.subheader("Exploration des données")
+    st.markdown("<span style='font-size: 20px;'>Actions réalisées</span>", unsafe_allow_html=True)
             
-            st.markdown("""
+    st.markdown("""
+        - Suppression des valeurs manquantes : données entre 23h et 5h du matin (correspondant à 6.2% du nbre de passage des vélos)
+        - Suppression des colonnes non pertinentes pour l'analyse
+                
+    """, unsafe_allow_html=True)
+       
+    st.markdown("<span style='font-size: 20px; '>Dataset final</span>", unsafe_allow_html=True)
+    df_head = df.head(2)
+    st.dataframe(df_head, use_container_width=True)
 
-            - **Suppression des valeurs manquantes :**
-                - Absence de certains liens hypertextes pour afficher les photos      
-                - Absence de la météo et de la température entre 23h et 5h du matin (soit 6.2% du nbre de vélos)
-            """, unsafe_allow_html=True)
+    with st.expander("Avoir un aperçu du dataset final"):
+        st.markdown("<span style='font-size: 20px; font-weight: bold;'>Info dataset final</span>", unsafe_allow_html=True)
+        st.text(info_str)
+
             
-            csv_file_path = 'C:\\Users\\La Foune\\Documents\\Streamlit\\comptage_final_suppNan.csv'
-            comptage_final = load_data(csv_file_path)
-            # Créer un graphique
-            fig = px.bar(comptage_final, x='Température', y='Comptage_final', color='Température',
-                        labels={'Température': 'Valeurs nulles ou non-nulles de Température', 'Comptage_final': 'Comptage du nombre de vélos'},
-                        title='Part des valeurs manquantes ou non (en prenant la variable Température)')
-            for i, row in comptage_final.iterrows():
-                fig.add_annotation(x=row['Température'], y=row['Comptage_final'],
-                                text=f"{row['Pourcentage']:.1f}%", showarrow=False,
-                                font=dict(color='black', size=12))
-            st.plotly_chart(fig)
 
 
-    st.subheader("Langage PYTHON et librairies utilisées") 
-    with st.expander("Voir les librairies utilisées"):
-        # Définir les données pour le tableau
-        langages_et_librairies = [
-            {"Nom": "pandas",
-            "Description": "Manipulation et analyse de données"},
-            {"Nom": "numpy",
-            "Description": "Calcul numérique" },
-            {"Nom": "statsmodels",
-            "Description": "Modélisation statistique"},
-            {"Nom": "scikit-learn",
-            "Description": "Apprentissage automatique et modélisation" },
-            {"Nom": "matplotlib",
-            "Description": "Visualisation de données statiques" },
-            {"Nom": "plotly",
-            "Description": "Visualisation de données interactives"},
-            {"Nom": "shapely",
-            "Description": "Manipulation de géométries"},
-            {"Nom": "folium",
-            "Description": "Cartographie interactive"},
-            {"Nom": "geopandas",
-            "Description": "Analyse géospatiale"},
-            {"Nom": "json",
-            "Description": "Manipulation de données JSON"},
-            {"Nom": "html",
-            "Description": "Affichage contenu web utilisé pour Streamlit"},        
-           {"Nom": "io",
-            "Description": "Gestion des flux de données en mémoire"},    
-            {"Nom": "joblib",
-            "Description": "Sauvegarde / chargement de modèle"}    
-        ]
+#___________________Page EXPLORATION 
 
-        # Fonction couleur et style
-        def format_description(description):
-            return f"<span style='font-weight: normal; color: #1f77b4;'>{description}</span>"
-
-        # Création du tableau 
-        table_data = [
-            {"Langage PYTHON avec librairie": f"<span style='color: #d62728;'>{item['Nom']}</span>",
-            "Description": format_description(item['Description'])}
-            for item in langages_et_librairies
-        ]
-
-        # Affichage avec HTML
-        table_html = "<table border='1' style='border-collapse: collapse; width: 50%;'>"
-        table_html += "<tr>"
-        table_html += "".join([f"<th style='padding: 4px 8px; background-color: #f2f2f2;'>{col}</th>" for col in table_data[0].keys()])
-        table_html += "</tr>"
-        for row in table_data:
-            table_html += "<tr>"
-            for val in row.values():
-                table_html += f"<td style='padding: 4px 8px;'>{val}</td>"
-            table_html += "</tr>"
-        table_html += "</table>"
-        st.markdown(table_html, unsafe_allow_html=True)
-
-
-
-    #______________________Section "Sources de données" dans le corps principal
-    st.subheader("Sources de données")
-    with st.expander("Accéder aux sources utilisées", expanded=False):
-        st.markdown("""
-            <div style="line-height: 1.4;">
-                                       
-            <div style="margin-bottom: 20px;">
-                <a href="https://www.historique-meteo.net/france/ile-de-france/paris/2024/01/" target="_blank">
-                    <button style="background-color: #1f77b4; color: white; border: none; padding: 2px 12px; text-align: center; text-decoration: none; display: inline-block; font-size: 14px; margin: 2px; cursor: pointer;">Historique Météo</button>
-                </a>
-                <p style="margin: 2px 0; line-height: 1.2;"> <strong>Licence</strong> : les données météorologiques fournies par la société WorldWeatherOnline</p>
-                <p style="margin: 2px 0; line-height: 1.2;"> <strong>Documentation pour les Weather codes</strong> : <a href="https://www.historique-meteo.net/weathercodes.txt" target="_blank">Weather codes</a></p>
-                <p style="margin: 2px 0; line-height: 1.2;"> <strong>Données exportées</strong> : Paris LAT/LON: 48.856614/2.3522219. Une table de correspondance interprète les codes météos et généralise les états de la météo.</p>
-            </div>
-
-            <div style="margin-bottom: 20px;">
-                <a href="https://data.smartidf.services/explore/dataset/mouvements-sociaux-depuis-2002/information/" target="_blank">
-                    <button style="background-color: #1f77b4; color: white; border: none; padding: 2px 12px; text-align: center; text-decoration: none; display: inline-block; font-size: 14px; margin: 2px; cursor: pointer;">Mouvements sociaux depuis 2002</button>
-                </a>
-                <p style="margin: 2px 0; line-height: 1.2;"> <strong>Licence</strong> : Open Database License (ODbL)</p>
-            </div>
-
-            <div style="margin-bottom: 20px;">
-                <a href="https://www.data.gouv.fr/fr/datasets/vacances-scolaires-par-zones/" target="_blank">
-                    <button style="background-color: #1f77b4; color: white; border: none; padding: 2px 12px; text-align: center; text-decoration: none; display: inline-block; font-size: 14px; margin: 2px; cursor: pointer;">Vacances Scolaires</button>
-                </a>
-                <p style="margin: 2px 0; line-height: 1.2;"> <strong>Licence</strong> : Licence Ouverte / Open Licence</p>
-                <p style="margin: 2px 0; line-height: 1.2;"> <strong>Données</strong> : Vacances identifiées par zone A, B, C pour toute la France.</p>
-            </div>
-
-            <div style="margin-bottom: 20px;">
-                <a href="https://www.data.gouv.fr/fr/datasets/jours-feries-en-france/" target="_blank">
-                    <button style="background-color: #1f77b4; color: white; border: none; padding: 2px 12px; text-align: center; text-decoration: none; display: inline-block; font-size: 14px; margin: 2px; cursor: pointer;">Jours Fériés</button>
-                </a>
-                <p style="margin: 2px 0; line-height: 1.2;"> <strong>Licence</strong> : Licence Ouverte / Open Licence version 2.0</p>
-            </div>
-
-            <div style="margin-bottom: 20px;">
-                <a href="https://opendata.paris.fr/explore/dataset/reseau-cyclable/information/" target="_blank">
-                    <button style="background-color: #1f77b4; color: white; border: none; padding: 2px 12px; text-align: center; text-decoration: none; display: inline-block; font-size: 14px; margin: 2px; cursor: pointer;">Réseau Cyclable - fichier .geojson</button>
-                </a>
-                <p style="margin: 2px 0; line-height: 1.2;"> <strong>Licence</strong> : Open Database License (ODbL)</p>
-            </div>
-
-            <div style="margin-bottom: 20px;">
-                <a href="https://opendata.paris.fr/explore/dataset/arrondissements/information/" target="_blank">
-                    <button style="background-color: #1f77b4; color: white; border: none; padding: 2px 12px; text-align: center; text-decoration: none; display: inline-block; font-size: 14px; margin: 2px; cursor: pointer;">Arrondissements - fichier .geojson</button>
-                </a>
-                <p style="margin: 2px 0; line-height: 1.2;"> <strong>Licence</strong> : Open Database px (ODbL)</p>
-                <p style="margin: 2px 0; line-height: 1.2;"> <strong>Description</strong> : Délimitation des arrondissements par le décret impérial du 1er novembre 1859. Un arrondissement est formé d’un seul polygone en respectant une topologie de surfaces.</p>
-            </div>
-
-            </div>
-        """, unsafe_allow_html=True)
-
-#___________________Page 3 EXPLORATION 
-elif page == pages[2]:  
     st.subheader("Statistique exploratoire")
-    st.write("L'analyse de la distribution des valeurs vise à fournir une compréhension approfondie de la structure et de la nature des données, essentielle pour orienter les analyses ultérieures et préparer le travail de modélisation pour faciliter la sélectoin du modèle approprié pour les prédictions. Comment sont réparties ou regroupées les valeurs ?")
+    st.write("L'analyse de la distribution des valeurs vise à fournir une compréhension approfondie de la structure et de la nature des données, essentielle pour orienter les analyses ultérieures et préparer le travail de modélisation pour faciliter la sélection du modèle approprié pour les prédictions. Comment sont réparties ou regroupées les valeurs ?")
     st.write("L'analyse des indicateurs de position et de dispersion inclue la moyenne, l'écart type, les quartiles, la médiane, les valeurs minimales et maximales, les valeurs d'asymétrie et d'applatissement afin d'inspecteur la normalité de la distribution.")
 
     with st.expander("Voir les statistiques exploratoires"):
         col1, col2 = st.columns([1, 1])
         with col1:
-            with open("C:\\Users\\La Foune\\Documents\\Streamlit\\Graph_histogramme.html", 'r', encoding='utf-8') as file:
+            with open("Graph_histogramme.html", 'r', encoding='utf-8') as file:
                 html_content6 = file.read()
             components.html(
                 f"""
@@ -669,81 +552,8 @@ elif page == pages[2]:
                 unsafe_allow_html=True
             )
 
-    st.subheader("Matrice de corrélation")
-    with st.expander("Voir la matrice de corrélation"):
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            with open("C:\\Users\\La Foune\\Documents\\Streamlit\\Graph_correlation.html", 'r', encoding='utf-8') as file:
-                    html_content8 = file.read()
-                    components.html(
-                            f"""
-                            <div style="width: 100%; height: 400px; overflow: hidden;margin-bottom: 80px;">
-                                {html_content8}
-                            </div>
-                            """,
-                            height=400,
-                            width=600,
-                        )
-            st.image("C:\\Users\\La Foune\\Documents\\Streamlit\\Heatmap_2.jpg", caption='Heatmap 2', use_column_width=True)
-
-
-        with col2:
-            st.markdown(
-                """
-                *Plus le coefficient de corrélation s'éloigne de zéro (positivement ou négativement), plus la relation entre les variables est forte.*
-                - **Corrélation positive**
-                **Heure** : corrélation positive modérée avec Comptage_horaire (0.29) &#10132; l'heure est fortement associée à des variations. Les heures de pointe peuvent influencer positivement le nombre de passages.
-                - **Corrélation négative**
-                **Num_jour** : corrélation négative faible avec Comptage_horaire (-0.10). Relation inverse entre jour de la semaine et comptage horaire avec une possible influence entre semaine et week-end ou/et entre les jours.
-                """,
-                unsafe_allow_html=True
-            )
-        
-       
-    st.subheader("Test Anova")
-    with st.expander("Voir le test Anova"):
-        st.write("Les test ANOVA est utilisé pour évaluer la relation entre les variables indépendantes catégorielles et la variable dépendante continue (notre variable cible) et détecter les facteurs explicatifs qui influencent les résultats. ")
-        st.write("**Les variables numériques sont traitées comme discrètes pour l'analyse ANOVA, les plus influentes étant celles avec les plus hautes valeurs de la statistique F comme Heure et Tranche_Horaire, Week_or_not ou Num_jour, Température. Ces variables ont un impact significatif sur le Comptage_horaire des vélos, tandis que d'autres ont des effets plus modestes.**")
-        st.write("**Statistique F** : mesure la variance entre les groupes par rapport à la variance au sein des groupes. Si la valeur est élevée, les différents groupes ont des effect significatifs différents.")
-        st.write("**P-Value** :  Indique que les différences entre les groupes sont statistiquement significatives ou non (seuil : 0,05).")
-
-        with open("C:\\Users\\La Foune\\Documents\\Streamlit\\GraphAnnova.html", 'r', encoding='utf-8') as file:
-            html_content6 = file.read()
-        components.html(
-            f"""
-            <div style="position: relative; left: -20px;">
-                {html_content6}
-            </div>
-            """,
-            height=400,
-            width=1100,  )
-
-
-        col1, col2 = st.columns([2, 1])
-        with col1: 
-            data = {
-                    'Hypothèse': ['H0', 'H1'],
-                    'Description': [
-                        'Il n\'y a pas d\'effet significatif de la variable catégorielle (qualitative) sur la variable continue (quantitative).',
-                        'Il y a un effet significatif de la variable catégorielle (qualitative) sur la variable\n continue (quantitative).'
-                        ]}
-            df_hypotheses = pd.DataFrame(data)
-            html_table = df_hypotheses.to_html(escape=False, index=False)
-            st.markdown(html_table, unsafe_allow_html=True) 
-
-
-        with col2:
-            AnovaValue = {
-                'Valeur': ['P-value ≤ 0,05', 'P-value > 0,05'],
-                'Décision': [
-                    "H0 est rejeté et on accepte H1",
-                    "H0 n'est pas rejeté"
-                    ]}                
-            df_anova = pd.DataFrame(AnovaValue)
-            st.dataframe(df_anova, use_container_width=False,hide_index=True) 
-
 #___________________page DataVisualisation
-elif page == pages[3]:  
+elif page == pages[2]:  
     st.subheader("Visualisation des données")
 
     #___________Graphique ANNUEL ET EVENEMENTS SPECIAUX
@@ -762,9 +572,9 @@ elif page == pages[3]:
     )
     with st.expander("Voir les graphiques"):
         # Charger les données
-        data_comptage_annee = pd.read_csv('C:\\Users\\La Foune\\Documents\\Streamlit\\data_comptage_annee.csv')
-        data_evolution = pd.read_csv('C:\\Users\\La Foune\\Documents\\Streamlit\\data_evolution.csv')
-        with open("C:\\Users\\La Foune\\Documents\\Streamlit\\ComptageEvenements.html", 'r', encoding='utf-8') as file:
+        data_comptage_annee = pd.read_csv('data_comptage_annee.csv')
+        data_evolution = pd.read_csv('data_evolution.csv')
+        with open("ComptageEvenements.html", 'r', encoding='utf-8') as file:
             html_content3 = file.read()
 
 
@@ -891,8 +701,8 @@ elif page == pages[3]:
     with st.expander("Voir les graphiques"):
 
         # Charger les données
-        data_agg = pd.read_csv('C:\\Users\\La Foune\\Documents\\Streamlit\\data_agg.csv')
-        data_pie = pd.read_csv('C:\\Users\\La Foune\\Documents\\Streamlit\\data_pie.csv')
+        data_agg = pd.read_csv('data_agg.csv')
+        data_pie = pd.read_csv('data_pie.csv')
 
         # Trouver l'index de la plus faible valeur
         min_index = data_pie['Comptage_horaire'].idxmin()
@@ -962,10 +772,10 @@ elif page == pages[3]:
 
         # Graphiques valeurs météo
         # Charger les données
-        data_avis_meteo = pd.read_csv('C:\\Users\\La Foune\\Documents\\Streamlit\\data_avis_meteo.csv')  
-        data_meteo = pd.read_csv('C:\\Users\\La Foune\\Documents\\Streamlit\\data_meteo.csv')      
-        data_uv = pd.read_csv('C:\\Users\\La Foune\\Documents\\Streamlit\\data_uv.csv')  
-        data_temperature = pd.read_csv('C:\\Users\\La Foune\\Documents\\Streamlit\\data_temperature.csv')  
+        data_avis_meteo = pd.read_csv('data_avis_meteo.csv')  
+        data_meteo = pd.read_csv('data_meteo.csv')      
+        data_uv = pd.read_csv('data_uv.csv')  
+        data_temperature = pd.read_csv('data_temperature.csv')  
 
         # Création de la figure avec les sous-tracés
         fig_meteo = make_subplots(
@@ -1016,7 +826,7 @@ elif page == pages[3]:
     with st.expander("Voir les graphiques"):
         # Graphique TRANCHE HORAIRE ET SEMAINE OU Week-end 
         # Charger les données
-        data_TrancheH_Week_or_not = pd.read_csv('C:\\Users\\La Foune\\Documents\\Streamlit\\TrancheH_Week_or_not.csv')  
+        data_TrancheH_Week_or_not = pd.read_csv('TrancheH_Week_or_not.csv')  
 
         # Créer le graphique avec facettes
         fig_heure = px.bar(
@@ -1066,7 +876,7 @@ elif page == pages[3]:
 
         #____________________ JOURS FERIES
         # Data Jours fériés
-        jour_ferie = pd.read_csv('C:\\Users\\La Foune\\Documents\\Streamlit\\jour_ferie.csv')  
+        jour_ferie = pd.read_csv('jour_ferie.csv')  
 
         # Graphique JOURS FERIES
         fig_jour_ferie = px.bar(
@@ -1111,7 +921,7 @@ elif page == pages[3]:
 
         #____________________ HOLIDAYS
         # Data Jours VACANCES
-        data_holidays = pd.read_csv('C:\\Users\\La Foune\\Documents\\Streamlit\\data_holidays.csv') 
+        data_holidays = pd.read_csv('data_holidays.csv') 
 
         # Graphique JOURS FERIES
         fig_holidays = px.bar(
@@ -1163,9 +973,8 @@ elif page == pages[3]:
         with col1:
             st.plotly_chart(fig_holidays, use_container_width=True)
 
-
 #___________________Machine Learning 1
-elif page == pages[4]: 
+elif page == pages[3]: 
     # Tableau des performances
     modele_et_parametrage = [
         {
@@ -1266,28 +1075,19 @@ elif page == pages[4]:
     # Afficher le tableau HTML 
     st.subheader("Tableau des Performances des Modèles")
     st.markdown(table_html, unsafe_allow_html=True)
-
+    import urllib.request
+   
     #________Charger les données
     @st.cache_data 
     def load_data():
-        df_pre = pd.read_csv('C:\\Users\\La Foune\\Documents\\Streamlit\\df_pre_modelisation.csv') # Id_Compteur
+        df_pre = pd.read_csv(os.path.join(filefolderpath,'df_pre_modelisation.csv')) # Id_Compteur
         return df_pre
 
-     
-
-    #________Charger les modèles enregistrés avec JOBLIB
-    @st.cache_data 
-    def load_models():
-        RandomForest1_model = joblib.load('RandomForestPipe_compteursParis.pkl')
-        TreeRegressor_model = joblib.load('treeRegressor1_compteursParis.pkl')
-        XGB_model = joblib.load('xgb_compteursParis.pkl')
-        LGB1_model = joblib.load('lgb_compteursParis1.pkl')
-        return RandomForest1_model, TreeRegressor_model, XGB_model, LGB1_model
 
 
     #________Séparer le jeu de données en features (X) et target (y) 
     df_pre = load_data()
-
+    df_pre.info()
     # Définir une liste vide pour stocker les numéros de semaine sélectionnés
     selected_weeks = []  
     for week in range(4, 53, 4): # Boucler sur les multiples en 4 de 4 à 52 inclus
@@ -1309,111 +1109,51 @@ elif page == pages[4]:
         return np.sqrt(np.mean((np.log1p(np.clip(y_pred, 0, None)) - np.log1p(y_true)) ** 2))
     rmsle_scorer = make_scorer(rmsle)
 
-    #-----------------------------------------Faire les prédictions avec chaque modèle
-    RandomForest1_model, TreeRegressor_model, XGB_model, LGB1_model = load_models()
-
-    y_pred_Lgb1 = LGB1_model.predict(X_test)
-    y_pred_Xgb = XGB_model.predict(X_test)
-    y_pred_TreeRegressor = TreeRegressor_model.predict(X_test)
-    y_pred_RandomForest = RandomForest1_model.predict(X_test)
    
     #-----------------------------------------Calculer les métriques pour chaque modèle
     #_________ LGBX
-    metrics_Lgb1 = pd.DataFrame({
-        'R²': [r2_score(y_test, y_pred_Lgb1)],
-        'RMSLE': [rmsle(y_test, y_pred_Lgb1)],
-        'RMSE': [mean_squared_error(y_test, y_pred_Lgb1, squared=False)],
-        'MSE': [mean_squared_error(y_test, y_pred_Lgb1)],
-        'MAE': [mean_absolute_error(y_test, y_pred_Lgb1)],
-    }, index=['Prédiction'])
+    metrics_Lgb1 = pd.read_hdf('model_lgb1.h5','metrics_Lgb1')
 
     #_________ XGB
-    metrics_Xgb = pd.DataFrame({
-        'R²': [r2_score(y_test, y_pred_Xgb)],
-        'RMSLE': [rmsle(y_test, y_pred_Xgb)],
-        'RMSE': [mean_squared_error(y_test, y_pred_Xgb, squared=False)],
-        'MSE': [mean_squared_error(y_test, y_pred_Xgb)],
-        'MAE': [mean_absolute_error(y_test, y_pred_Xgb)],
-    }, index=['Prédiction'])
+    metrics_Xgb = pd.read_hdf('model_xgb.h5','metrics_Xgb')
+
 
     #_________ TreeRegressor
-    metrics_TreeRegressor = pd.DataFrame({
-        'R²': [r2_score(y_test, y_pred_TreeRegressor)],
-        'RMSLE': [rmsle(y_test, y_pred_TreeRegressor)],
-        'RMSE': [mean_squared_error(y_test, y_pred_TreeRegressor, squared=False)],
-        'MSE': [mean_squared_error(y_test, y_pred_TreeRegressor)],
-        'MAE': [mean_absolute_error(y_test, y_pred_TreeRegressor)],
-    }, index=['Prédiction'])
+    metrics_TreeRegressor = pd.read_hdf('model_tree.h5','metrics_TreeRegressor')
 
     #_________RandomForest
-    metrics_RandomForest = pd.DataFrame({
-        'R²': [r2_score(y_test, y_pred_RandomForest)],
-        'RMSLE': [rmsle(y_test, y_pred_RandomForest)],
-        'RMSE': [mean_squared_error(y_test, y_pred_RandomForest, squared=False)],
-        'MSE': [mean_squared_error(y_test, y_pred_RandomForest)],
-        'MAE': [mean_absolute_error(y_test, y_pred_RandomForest)],
-    }, index=['Prédiction'])
+    metrics_RandomForest = pd.read_hdf('model_forest.h5','metrics_RandomForest')
 
 
     #-----------------------------------------Créer les dataframes
     #_________ LGBX
     # DataFrame valeurs réelles et prévues + ajouter les Address ET Fusionner les informations d'adresse avec comparison_df_Lgb1
-    comparison_df_Lgb1  = pd.DataFrame({
-        'Comptages_réels': y_test.values,
-        'Comptages_prédits': y_pred_Lgb1.astype(int), 
-        'Id_Compteur' : X_test['Id_Compteur'], 
-        'Heure' : X_test['Heure'], 
-     }, index=X_test.index).merge(pd.read_csv('C:\\Users\\La Foune\\Documents\\Streamlit\\df_compteur_unique.csv'), on='Id_Compteur', how='left')
+    comparison_df_Lgb1  = pd.read_hdf('model_lgb1.h5','comparison_df_Lgb1')
+
     
     #_________ XGB
-    comparison_df_Xgb = pd.DataFrame({
-        'Comptages_réels': y_test.values,
-        'Comptages_prédits': y_pred_Xgb.astype(int), 
-        'Id_Compteur' : X_test['Id_Compteur'], 
-        'Heure' : X_test['Heure'], 
-     }, index=X_test.index).merge(pd.read_csv('C:\\Users\\La Foune\\Documents\\Streamlit\\df_compteur_unique.csv'), on='Id_Compteur', how='left')
+    comparison_df_Xgb = pd.read_hdf('model_xgb.h5','comparison_df_Xgb')
     
     #_________ TreeRegressor
-    comparison_df_TreeRegressor = pd.DataFrame({
-        'Comptages_réels': y_test.values,
-        'Comptages_prédits': y_pred_TreeRegressor.astype(int), 
-        'Id_Compteur' : X_test['Id_Compteur'], 
-        'Heure' : X_test['Heure'], 
-     }, index=X_test.index).merge(pd.read_csv('C:\\Users\\La Foune\\Documents\\Streamlit\\df_compteur_unique.csv'), on='Id_Compteur', how='left')
+    comparison_df_TreeRegressor = pd.read_hdf('model_tree.h5','comparison_df_TreeRegressor')
     
     #_________RandomForest
-    comparison_df_RandomForest = pd.DataFrame({
-        'Comptages_réels': y_test.values,
-        'Comptages_prédits': y_pred_RandomForest.astype(int), 
-        'Id_Compteur' : X_test['Id_Compteur'], 
-        'Heure' : X_test['Heure'], 
-     }, index=X_test.index).merge(pd.read_csv('C:\\Users\\La Foune\\Documents\\Streamlit\\df_compteur_unique.csv'), on='Id_Compteur', how='left')
+    comparison_df_RandomForest = pd.read_hdf('model_forest.h5','comparison_df_RandomForest')
 
     #-----------------------------------------Filtrer et calculer les moyennes pour chaque modèle
     #_________ LGBX
-    df_compteurs_prevision_Lgb1 = comparison_df_Lgb1.groupby(['Heure']).agg({
-        'Comptages_réels': 'mean',
-        'Comptages_prédits': 'mean'
-    }).reset_index()
+    df_compteurs_prevision_Lgb1 = pd.read_hdf('model_lgb1.h5','df_compteurs_prevision_Lgb1')
     
 
     #_________ XGB
-    df_compteurs_prevision_Xgb = comparison_df_Xgb.groupby(['Heure']).agg({
-        'Comptages_réels': 'mean',
-        'Comptages_prédits': 'mean'
-    }).reset_index()
+    df_compteurs_prevision_Xgb = pd.read_hdf('model_xgb.h5','df_compteurs_prevision_Xgb')
+    
 
     #_________ TreeRegressor
-    df_compteurs_prevision_TreeRegressor = comparison_df_TreeRegressor.groupby(['Heure']).agg({
-        'Comptages_réels': 'mean',
-        'Comptages_prédits': 'mean'
-    }).reset_index()
+    df_compteurs_prevision_TreeRegressor = pd.read_hdf('model_tree.h5','df_compteurs_prevision_TreeRegressor')
 
     #_________RandomForest
-    df_compteurs_prevision_RandomForest = comparison_df_RandomForest.groupby(['Heure']).agg({
-        'Comptages_réels': 'mean',
-        'Comptages_prédits': 'mean'
-    }).reset_index()
+    df_compteurs_prevision_RandomForest = pd.read_hdf('model_forest.h5','df_compteurs_prevision_RandomForest')
 
     #----------------------------------------- Faire une synthèse 
 
@@ -1506,19 +1246,19 @@ elif page == pages[4]:
         st.plotly_chart(fig_RandomForest)
 
 #___________________Machine Learning 2
-elif page == pages[5]: 
+elif page == pages[4]: 
     #________Charger les données
     @st.cache_data 
     def load_data():
-        df_pre = pd.read_csv('C:\\Users\\La Foune\\Documents\\Streamlit\\df_pre_modelisation.csv') # Id_Compteur
-        lien_photos= pd.read_csv('C:\\Users\\La Foune\\Documents\\Streamlit\\lien_photos.csv') #Id_Compteur Lien_image
-        nom_compteur= pd.read_csv('C:\\Users\\La Foune\\Documents\\Streamlit\\df_compteur_unique.csv') #Id_Compteur Address
+        df_pre = pd.read_csv('df_pre_modelisation.csv') # Id_Compteur
+        lien_photos= pd.read_csv('lien_photos.csv') #Id_Compteur Lien_image
+        nom_compteur= pd.read_csv('df_compteur_unique.csv') #Id_Compteur Address
         return df_pre, lien_photos, nom_compteur
     
     #________Charger les modèles enregistrés avec JOBLIB
     @st.cache_data 
     def load_model():
-        return joblib.load('treeRegressor1_compteursParis.pkl')
+        return joblib.load('lgb_compteursParis.pkl')
 
     LGB1_model  = load_model()
 
@@ -1552,25 +1292,14 @@ elif page == pages[5]:
 
     #-----------------------------------------Calculer les métriques pour chaque modèle
     #_________ LGBX
-    metrics_Lgb1 = pd.DataFrame({
-        'R²': [r2_score(y_test, y_pred_Lgb1)],
-        'RMSLE': [rmsle(y_test, y_pred_Lgb1)],
-        'RMSE': [mean_squared_error(y_test, y_pred_Lgb1, squared=False)],
-        'MSE': [mean_squared_error(y_test, y_pred_Lgb1)],
-        'MAE': [mean_absolute_error(y_test, y_pred_Lgb1)],
-    }, index=['Prédiction'])
+    metrics_Lgb1 = pd.read_hdf('model_lgb1.h5','metrics_Lgb1')
     
 
     #-----------------------------------------Créer les dataframes   
     #_________ LGBX
     # DataFrame valeurs réelles et prévues + ajouter les Address ET Fusionner les informations d'adresse avec comparison_df_Lgb1
-    comparison_df_Lgb1  = pd.DataFrame({
-        'Comptages_réels': y_test.values,
-        'Comptages_prédits': y_pred_Lgb1.astype(int), 
-        'Id_Compteur' : X_test['Id_Compteur'], 
-        'Heure' : X_test['Heure'], 
-        'District':X_test['District']
-     }, index=X_test.index)
+    comparison_df_Lgb1  = pd.read_hdf('model_lgb1.h5','comparison_df_Lgb1_district')
+    
 
 
     comparison_df_Lgb1 = comparison_df_Lgb1.merge(nom_compteur, on='Id_Compteur', how='left').merge(lien_photos, on='Id_Compteur',how='left')
@@ -1590,8 +1319,8 @@ elif page == pages[5]:
     #---------------------- Créer les groupes de fréquence compteurs
     df_groupe = pd.DataFrame(comparison_df_Lgb1[['Id_Compteur','District','Comptages_réels']])
     df_groupe['Mean_Comptages'] = df_groupe.groupby('Id_Compteur')['Comptages_réels'].transform('mean') # Faire la moyenne
-    df_groupe['Group'] = pd.qcut(df_groupe['Mean_Comptages'], 4, labels=['groupe 1 (Faible affluence)', 'groupe 2 (Moyenne affluence)', 'groupe 3 (Affluence forte)', 'groupe 4 (Affluence très élevée)']) # Créer les 4 groupes par moyenne
-    df_groupe = df_groupe.drop(columns='Comptages_réels').drop_duplicates().reset_index(drop=True).merge(pd.read_csv('C:\\Users\\La Foune\\Documents\\Streamlit\\df_compteur_unique.csv'), on='Id_Compteur', how='left') # Supprimer les colonnes inutiles, ajouter Address
+    df_groupe['Group'] = pd.qcut(df_groupe['Mean_Comptages'], 4, labels=['Affluence Faible (1)', 'Affluence Moyenne  (2)', 'Affluence Forte (3)', 'Affluence Très élevée (4)']) # Créer les 4 groupes par moyenne
+    df_groupe = df_groupe.drop(columns='Comptages_réels').drop_duplicates().reset_index(drop=True).merge(pd.read_csv('df_compteur_unique.csv'), on='Id_Compteur', how='left') # Supprimer les colonnes inutiles, ajouter Address
 
     # Calculer les statistiques pour chaque groupe
     stats = {}
@@ -1602,10 +1331,13 @@ elif page == pages[5]:
         mean_value = group_data['Mean_Comptages'].mean()
         stats[groupe] = {'min': min_value, 'max': max_value, 'mean': mean_value}
 
-    ordre_groupes = ['groupe 1 (Faible affluence)', 'groupe 2 (Moyenne affluence)', 'groupe 3 (Affluence forte)', 'groupe 4 (Affluence très élevée)']
+    ordre_groupes = ['Affluence Faible (1)', 'Affluence Moyenne  (2)', 'Affluence Forte (3)', 'Affluence Très élevée (4)']
 
     # Case à cocher 
-    st.write('Filtrer les compteurs par densité de passage :')
+    st.header("Sélectionner le compteur")
+    st.write('Possibilité de filtrer les compteurs par densité de passage :')
+
+
     groupes_selectionnes = []
 
     # Afficher les cases à cocher avec les statistiques
@@ -1616,7 +1348,7 @@ elif page == pages[5]:
         
         # Afficher les cases à cocher avec les statistiques intégrées
         if st.checkbox(
-            f'Afficher {groupe} - min.: {min_val:.2f}, max.: {max_val:.2f}, moyenne: {mean_val:.2f})', 
+            f'Compteurs {groupe} - min.: {min_val:.2f}, max.: {max_val:.2f}, moyenne: {mean_val:.2f}', 
             value=True ):
             groupes_selectionnes.append(groupe)
 
@@ -1626,12 +1358,13 @@ elif page == pages[5]:
     else:
         df_selectionne = df_groupe
 
-
+    st.write('')
+    st.write('_Période analysée du 01 avril 2021 au 31 mars 2022_')
     st.write('----------')
 
 
     # Liste déroulante pour sélectionner et filtrer un compteur
-    nom_compteur_selectionne = st.selectbox('Sélectionnez un compteur du groupe choisi', df_selectionne['Address'].unique(), key='selectbox_compteur')
+    nom_compteur_selectionne = st.selectbox('Sélectionnez un compteur ...', df_selectionne['Address'].unique(), key='selectbox_compteur')
 
     # Récupérer le numéro de district associé au compteur sélectionné
     district_selectionne = df_groupe[df_groupe['Address'] == nom_compteur_selectionne]['District'].iloc[0]
@@ -1827,8 +1560,8 @@ elif page == pages[5]:
         
         @st.cache_data 
         def load_data():
-            districts = gpd.read_file('C:\\Users\\La Foune\\Documents\\Streamlit\\districts.geojson') 
-            df_reseau_lambert_carte = gpd.read_file('C:\\Users\\La Foune\\Documents\\Streamlit\\df_reseau_lambert_carte.geojson')         
+            districts = gpd.read_file('districts.geojson') 
+            df_reseau_lambert_carte = gpd.read_file('df_reseau_lambert_carte.geojson')         
             return districts, df_reseau_lambert_carte
         
         districts,df_reseau_lambert_carte = load_data()
@@ -2016,7 +1749,121 @@ elif page == pages[5]:
         
         folium_static(paris_map2)
 
-elif page == pages[6]:
-    st.header("Conclusion")
+# Sources
+elif page == pages[5]:
+    st.subheader("Langage PYTHON et librairies utilisées") 
+    with st.expander("Voir les librairies utilisées"):
+        # Définir les données pour le tableau
+        langages_et_librairies = [
+            {"Nom": "pandas",
+            "Description": "Manipulation et analyse de données"},
+            {"Nom": "numpy",
+            "Description": "Calcul numérique" },
+            {"Nom": "statsmodels",
+            "Description": "Modélisation statistique"},
+            {"Nom": "scikit-learn",
+            "Description": "Apprentissage automatique et modélisation" },
+            {"Nom": "matplotlib",
+            "Description": "Visualisation de données statiques" },
+            {"Nom": "plotly",
+            "Description": "Visualisation de données interactives"},
+            {"Nom": "shapely",
+            "Description": "Manipulation de géométries"},
+            {"Nom": "folium",
+            "Description": "Cartographie interactive"},
+            {"Nom": "geopandas",
+            "Description": "Analyse géospatiale"},
+            {"Nom": "json",
+            "Description": "Manipulation de données JSON"},
+            {"Nom": "html",
+            "Description": "Affichage contenu web utilisé pour Streamlit"},        
+           {"Nom": "io",
+            "Description": "Gestion des flux de données en mémoire"},    
+            {"Nom": "joblib",
+            "Description": "Sauvegarde / chargement de modèle"}    
+        ]
+
+        # Fonction couleur et style
+        def format_description(description):
+            return f"<span style='font-weight: normal; color: #1f77b4;'>{description}</span>"
+
+        # Création du tableau 
+        table_data = [
+            {"Langage PYTHON avec librairie": f"<span style='color: #d62728;'>{item['Nom']}</span>",
+            "Description": format_description(item['Description'])}
+            for item in langages_et_librairies
+        ]
+
+        # Affichage avec HTML
+        table_html = "<table border='1' style='border-collapse: collapse; width: 50%;'>"
+        table_html += "<tr>"
+        table_html += "".join([f"<th style='padding: 4px 8px; background-color: #f2f2f2;'>{col}</th>" for col in table_data[0].keys()])
+        table_html += "</tr>"
+        for row in table_data:
+            table_html += "<tr>"
+            for val in row.values():
+                table_html += f"<td style='padding: 4px 8px;'>{val}</td>"
+            table_html += "</tr>"
+        table_html += "</table>"
+        st.markdown(table_html, unsafe_allow_html=True)
+
+
+
+    #______________________Section "Sources de données" dans le corps principal
+    st.subheader("Sources de données")
+    with st.expander("Accéder aux sources utilisées", expanded=False):
+        st.markdown("""
+            <div style="line-height: 1.4;">
+                                       
+            <div style="margin-bottom: 20px;">
+                <a href="https://www.historique-meteo.net/france/ile-de-france/paris/2024/01/" target="_blank">
+                    <button style="background-color: #1f77b4; color: white; border: none; padding: 2px 12px; text-align: center; text-decoration: none; display: inline-block; font-size: 14px; margin: 2px; cursor: pointer;">Historique Météo</button>
+                </a>
+                <p style="margin: 2px 0; line-height: 1.2;"> <strong>Licence</strong> : les données météorologiques fournies par la société WorldWeatherOnline</p>
+                <p style="margin: 2px 0; line-height: 1.2;"> <strong>Documentation pour les Weather codes</strong> : <a href="https://www.historique-meteo.net/weathercodes.txt" target="_blank">Weather codes</a></p>
+                <p style="margin: 2px 0; line-height: 1.2;"> <strong>Données exportées</strong> : Paris LAT/LON: 48.856614/2.3522219. Une table de correspondance interprète les codes météos et généralise les états de la météo.</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <a href="https://data.smartidf.services/explore/dataset/mouvements-sociaux-depuis-2002/information/" target="_blank">
+                    <button style="background-color: #1f77b4; color: white; border: none; padding: 2px 12px; text-align: center; text-decoration: none; display: inline-block; font-size: 14px; margin: 2px; cursor: pointer;">Mouvements sociaux depuis 2002</button>
+                </a>
+                <p style="margin: 2px 0; line-height: 1.2;"> <strong>Licence</strong> : Open Database License (ODbL)</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <a href="https://www.data.gouv.fr/fr/datasets/vacances-scolaires-par-zones/" target="_blank">
+                    <button style="background-color: #1f77b4; color: white; border: none; padding: 2px 12px; text-align: center; text-decoration: none; display: inline-block; font-size: 14px; margin: 2px; cursor: pointer;">Vacances Scolaires</button>
+                </a>
+                <p style="margin: 2px 0; line-height: 1.2;"> <strong>Licence</strong> : Licence Ouverte / Open Licence</p>
+                <p style="margin: 2px 0; line-height: 1.2;"> <strong>Données</strong> : Vacances identifiées par zone A, B, C pour toute la France.</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <a href="https://www.data.gouv.fr/fr/datasets/jours-feries-en-france/" target="_blank">
+                    <button style="background-color: #1f77b4; color: white; border: none; padding: 2px 12px; text-align: center; text-decoration: none; display: inline-block; font-size: 14px; margin: 2px; cursor: pointer;">Jours Fériés</button>
+                </a>
+                <p style="margin: 2px 0; line-height: 1.2;"> <strong>Licence</strong> : Licence Ouverte / Open Licence version 2.0</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <a href="https://opendata.paris.fr/explore/dataset/reseau-cyclable/information/" target="_blank">
+                    <button style="background-color: #1f77b4; color: white; border: none; padding: 2px 12px; text-align: center; text-decoration: none; display: inline-block; font-size: 14px; margin: 2px; cursor: pointer;">Réseau Cyclable - fichier .geojson</button>
+                </a>
+                <p style="margin: 2px 0; line-height: 1.2;"> <strong>Licence</strong> : Open Database License (ODbL)</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <a href="https://opendata.paris.fr/explore/dataset/arrondissements/information/" target="_blank">
+                    <button style="background-color: #1f77b4; color: white; border: none; padding: 2px 12px; text-align: center; text-decoration: none; display: inline-block; font-size: 14px; margin: 2px; cursor: pointer;">Arrondissements - fichier .geojson</button>
+                </a>
+                <p style="margin: 2px 0; line-height: 1.2;"> <strong>Licence</strong> : Open Database px (ODbL)</p>
+                <p style="margin: 2px 0; line-height: 1.2;"> <strong>Description</strong> : Délimitation des arrondissements par le décret impérial du 1er novembre 1859. Un arrondissement est formé d’un seul polygone en respectant une topologie de surfaces.</p>
+            </div>
+
+            </div>
+        """, unsafe_allow_html=True)
+
+
     
     
