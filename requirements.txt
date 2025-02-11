@@ -7,7 +7,7 @@ seaborn==0.12.2
 statsmodels
 lightgbm
 xgboost
-geopandas==0.13.2
+geopandas==0.14.4
 folium==0.14.0
 shapely==2.0.4
 streamlit_folium
